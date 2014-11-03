@@ -46,6 +46,7 @@ class WP_JSON_Taxonomies {
 	 * Get taxonomies
 	 *
 	 * @param string|null $type A specific post type for which to retrieve taxonomies (optional)
+	 * @param string $context Context (view|embed)
 	 * @return array Taxonomy data
 	 */
 	public function get_taxonomies( $type = null, $context = 'view' ) {
@@ -93,7 +94,7 @@ class WP_JSON_Taxonomies {
 	 * @return array Taxonomy data
 	 */
 	protected function prepare_taxonomy( $taxonomy, $context = 'view' ) {
-		if ( $taxonomy->public === false ) {
+		if ( false === $taxonomy->public ) {
 			return new WP_Error( 'json_cannot_read_taxonomy', __( 'Cannot view taxonomy' ), array( 'status' => 403 ) );
 		}
 
@@ -127,11 +128,11 @@ class WP_JSON_Taxonomies {
 	 *
 	 * @param array $data Type data
 	 * @param array $post Internal type data
-	 * @param boolean $_in_taxonomy The record being filtered is a taxonomy object (internal use)
+	 * @param string $context Context (view|embed)
 	 * @return array Filtered data
 	 */
 	public function add_taxonomy_data( $data, $type, $context = 'view' ) {
-		if ( $context !== 'embed' ) {
+		if ( 'embed' !== $context ) {
 			$data['taxonomies'] = $this->get_taxonomies( $type->name, 'embed' );
 		}
 
@@ -236,7 +237,7 @@ class WP_JSON_Taxonomies {
 			),
 		);
 
-		if ( ! empty( $data['parent'] ) && $context === 'view' ) {
+		if ( ! empty( $data['parent'] ) && 'view' === $context ) {
 			$data['parent'] = $this->get_term( $term->taxonomy, $data['parent'], 'view-parent' );
 		} elseif ( empty( $data['parent'] ) ) {
 			$data['parent'] = null;
