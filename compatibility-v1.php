@@ -62,7 +62,7 @@ function json_v1_compatible_dispatch( $result, $request ) {
 
 	// Build up the arguments, old-style
 	$args = array_merge( $request->get_url_params(), $request->get_query_params() );
-	if ( $request->get_method() === 'POST' ) {
+	if ( 'POST' === $request->get_method() ) {
 		$args = array_merge( $args, $request->get_body_params() );
 	}
 
