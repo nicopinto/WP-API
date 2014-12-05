@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.X2
+
+- Added the public-users endpoint
+
+  Retrieves the users that are not administrator or editors
+
 ## 1.1.1
 
 - Mitigate Flash CSRF exploit
