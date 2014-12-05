@@ -9,6 +9,20 @@ class WP_JSON_Users {
 	 */
 	public function register_routes( $routes ) {
 		$user_routes = array(
+			'/public-users' => array(
+				array(
+					'callback'  => array( $this, 'public_get_multiple' ),
+					'methods'   => WP_JSON_Server::READABLE,
+					'v1_compat' => true,
+				),
+			),
+			'/public-users/(?P<id>\d+)' => array(
+				array(
+					'callback'  => array( $this, 'public_get' ),
+					'methods'   => WP_JSON_Server::READABLE,
+					'v1_compat' => true,
+				),
+			),
 			// User endpoints
 			'/users' => array(
 				array(
@@ -108,6 +122,37 @@ class WP_JSON_Users {
 	}
 
 	/**
+	 * Retrieve a user (public version)
+	 *
+	 * @description method to get the single user that are not admins or editors
+	 * @author nicopinto
+	 *
+	 * @param int $id User ID
+	 * @param string $context
+	 * @return response
+	 */
+	public function public_get( $id, $context = 'view' ) {
+		$id = (int) $id;
+		$current_user_id = get_current_user_id();
+
+		$user = get_userdata( $id );
+
+		if(in_array('administrator', $user->roles)) {
+			return new WP_Error( 'json_user_cannot_list', __( 'Sorry, you are not allowed to retrieve an admin user.' ), array( 'status' => 403 ) );
+		}
+
+		if(in_array('editor', $user->roles)) {
+			return new WP_Error( 'json_user_cannot_list', __( 'Sorry, you are not allowed to retrieve an editor user.' ), array( 'status' => 403 ) );
+		}
+
+		if ( empty( $user->ID ) ) {
+			return new WP_Error( 'json_user_invalid_id', __( 'Invalid user ID.' ), array( 'status' => 400 ) );
+		}
+
+		return $this->prepare_user( $user, $context );
+	}
+
+	/**
 	 * Retrieve the current user
 	 *
 	 * @param string $context
@@ -150,6 +195,57 @@ class WP_JSON_Users {
 
 		$args = array(
 			'orderby' => 'user_login',
+			'order'   => 'ASC',
+		);
+		$args = array_merge( $args, $filter );
+
+		$args = apply_filters( 'json_user_query', $args, $filter, $context, $page );
+
+		// Pagination
+		$args['number'] = empty( $args['number'] ) ? 10 : absint( $args['number'] );
+		$page           = absint( $page );
+		$args['offset'] = ( $page - 1 ) * $args['number'];
+
+		$user_query = new WP_User_Query( $args );
+
+		if ( empty( $user_query->results ) ) {
+			return array();
+		}
+
+		$struct = array();
+
+		foreach ( $user_query->results as $user ) {
+			$struct[] = $this->prepare_user( $user, $context );
+		}
+
+		return $struct;
+	}
+
+	/**
+	 * Retrieve users (public version)
+	 *
+	 * @description method to get the users that are not admins or editors
+	 * @author nicopinto
+	 *
+	 * @param array $filter Extra query parameters for {@see WP_User_Query}
+	 * @param string $context optional
+	 * @param int $page Page number (1-indexed)
+	 * @return array contains a collection of User entities.
+	 */
+	public function public_get_multiple( $filter = array(), $context = 'view', $page = 1 ) {
+
+		$roleFilter = 'Subscriber';
+
+		if(isset($filter['role'])) {
+			$roleFilter = $filter['role'];
+			if($roleFilter === 'administrator' || $roleFilter === 'editor') {
+				return new WP_Error( 'json_user_cannot_list', __( 'Sorry, you are not allowed to list admin/editor users.' ), array( 'status' => 403 ) );
+			}
+		}
+
+		$args = array(
+			'role' => $roleFilter,
+			'orderby' => 'username',
 			'order'   => 'ASC',
 		);
 		$args = array_merge( $args, $filter );
