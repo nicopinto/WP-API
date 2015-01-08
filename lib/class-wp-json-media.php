@@ -57,7 +57,7 @@ class WP_JSON_Media extends WP_JSON_Posts {
 			add_filter( 'query_vars', array( $this, 'allow_status_query' ) );
 		}
 
-		$posts = parent::get_posts( $filter, $context, 'attachment', $page );
+		$posts = parent::get_multiple( $filter, $context, 'attachment', $page );
 
 		return $posts;
 	}
@@ -93,7 +93,7 @@ class WP_JSON_Media extends WP_JSON_Posts {
 			return new WP_Error( 'json_post_invalid_type', __( 'Invalid post type' ), array( 'status' => 400 ) );
 		}
 
-		return parent::get_post( $id, $context );
+		return parent::get( $id, $context );
 	}
 
 	/**
